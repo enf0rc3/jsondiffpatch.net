@@ -459,6 +459,53 @@ namespace JsonDiffPatchDotNet.UnitTests
 			Assert.AreEqual(2, array.Count);
 			Assert.AreEqual(left, array[0]);
 			Assert.AreEqual(right, array[1]);
-		}		
+		}
+
+		[Test]
+		public void Diff_ArrayInsertMidTextDiffNoObjectHash_ValidPatch_only_what_changes()
+		{
+			var jdp = new JsonDiffPatch(new Options {
+				TextDiff = TextDiffMode.Simple,
+			});
+
+			var left = JToken.Parse(@"{
+				""Variables"": [
+					{""Id"": ""var1"", ""Name"": ""Variable 1"", ""Value"": ""Value 1""},
+					{""Id"": ""var2"", ""Name"": ""Variable 2"", ""Value"": ""Value 2""},
+					{""Id"": ""var3"", ""Name"": ""Variable 3"", ""Value"": ""Value 3""},
+					{""Id"": ""var4"", ""Name"": ""Variable 4"", ""Value"": ""Value 4""},
+					{""Id"": ""var5"", ""Name"": ""Variable 5"", ""Value"": ""Value 5""}
+				]
+			}");
+
+			var right = JToken.Parse(@"{
+				""Variables"": [
+					{""Id"": ""var1"", ""Name"": ""Variable 1"", ""Value"": ""Value 1""},
+					{""Id"": ""var1.5"", ""Name"": ""Variable 1.5"", ""Value"": ""Value 1.5""},
+					{""Id"": ""var2"", ""Name"": ""Variable 2"", ""Value"": ""Value 2""},
+					{""Id"": ""var3"", ""Name"": ""Variable 3"", ""Value"": ""Value 3""},
+					{""Id"": ""var4"", ""Name"": ""Variable 4"", ""Value"": ""Value 4""},
+					{""Id"": ""var5"", ""Name"": ""Variable 5"", ""Value"": ""Value 5""}
+				]
+			}");
+
+			JObject diff = jdp.Diff(left, right) as JObject;
+
+			Assert.IsNotNull(diff, "Diff should not be null");
+			Console.WriteLine($"Fixed diff with ObjectHash: {diff}");
+
+			var variablesDiff = diff["Variables"] as JObject;
+			Assert.IsNotNull(variablesDiff, "Variables diff should not be null");
+
+			// With ObjectHash, we should only see the array type marker and the insert
+			Assert.AreEqual(2, variablesDiff.Properties().Count(), "Should have minimal diff entries with ObjectHash");
+			Assert.IsNotNull(variablesDiff["_t"], "Should have array type marker");
+			Assert.IsNotNull(variablesDiff["1"], "Should have insert at index 1");
+
+			// The insert should be a single-element array (add operation)
+			var insertDiff = variablesDiff["1"] as JArray;
+			Assert.IsNotNull(insertDiff, "Insert diff should be array");
+			Assert.AreEqual(1, insertDiff.Count, "Insert should have one element");
+		}
 	}
 }
