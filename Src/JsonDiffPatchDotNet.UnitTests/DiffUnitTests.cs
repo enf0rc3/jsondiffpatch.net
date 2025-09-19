@@ -222,7 +222,7 @@ namespace JsonDiffPatchDotNet.UnitTests
 		[Test]
 		public void Diff_EfficientArrayDiffWithComplexObjectHeadAdded_NoObjectHash_DisabledMove_ValidDiff()
 		{
-			var jdp = new JsonDiffPatch(new Options { ArrayDiff = ArrayDiffMode.Efficient, DiffArrayOptions = new ArrayOptions { DetectMove = false, IncludeValueOnMove = false } });
+			var jdp = new JsonDiffPatch(new Options { ArrayDiff = ArrayDiffMode.Efficient, DiffArrayOptions = new ArrayOptions { DetectMove = false, IncludeValueOnMove = false, MatchByPosition = true } });
 			var left = JToken.Parse(@"[{""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC8"", ""p"":false}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC9"", ""p"":true}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC10"", ""p"":true}]");
 			var right = JToken.Parse(@"[{""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC7"", ""p"":false}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC8"", ""p"":false}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC9"", ""p"":true}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC10"", ""p"":true}]");
 
@@ -239,7 +239,7 @@ namespace JsonDiffPatchDotNet.UnitTests
 		[Test]
 		public void Diff_EfficientArrayDiffWithComplexObjectHeadAdded_NoObjectHash_EnableddMove_ValidDiff()
 		{
-			var jdp = new JsonDiffPatch(new Options { ArrayDiff = ArrayDiffMode.Efficient, DiffArrayOptions = new ArrayOptions { DetectMove = true, IncludeValueOnMove = true } });
+			var jdp = new JsonDiffPatch(new Options { ArrayDiff = ArrayDiffMode.Efficient, DiffArrayOptions = new ArrayOptions { DetectMove = true, IncludeValueOnMove = true, MatchByPosition = true } });
 			var left = JToken.Parse(@"[{""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC8"", ""p"":false}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC9"", ""p"":true}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC10"", ""p"":true}]");
 			var right = JToken.Parse(@"[{""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC7"", ""p"":false}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC8"", ""p"":false}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC9"", ""p"":true}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC10"", ""p"":true}]");
 
@@ -256,7 +256,7 @@ namespace JsonDiffPatchDotNet.UnitTests
 		[Test]
 		public void Diff_EfficientArrayDiffWithComplexObjectMiddleAdded_NoObjectHash_EnabledMove_ValidDiff()
 		{
-			var jdp = new JsonDiffPatch(new Options { ArrayDiff = ArrayDiffMode.Efficient, DiffArrayOptions = new ArrayOptions { DetectMove = true, IncludeValueOnMove = true } });
+			var jdp = new JsonDiffPatch(new Options { ArrayDiff = ArrayDiffMode.Efficient, DiffArrayOptions = new ArrayOptions { DetectMove = true, IncludeValueOnMove = true, MatchByPosition = true } });
 			var left = JToken.Parse(@"[{""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC8"", ""p"":false}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC9"", ""p"":true}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC9"", ""p"":true}]");
 			var right = JToken.Parse(@"[{""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC8"", ""p"":false}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC9"", ""p"":true}, {""Id"" : ""NEW ID VALUE"", ""p"":true}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC9"", ""p"":true}]");
 
@@ -271,7 +271,7 @@ namespace JsonDiffPatchDotNet.UnitTests
 		[Test]
 		public void Diff_EfficientArrayDiffWithComplexObjectMiddleRemoved_NoObjectHash_EnabledMove_ValidDiff()
 		{
-			var jdp = new JsonDiffPatch(new Options { ArrayDiff = ArrayDiffMode.Efficient, DiffArrayOptions = new ArrayOptions { DetectMove = true, IncludeValueOnMove = true } });
+			var jdp = new JsonDiffPatch(new Options { ArrayDiff = ArrayDiffMode.Efficient, DiffArrayOptions = new ArrayOptions { DetectMove = true, IncludeValueOnMove = true, MatchByPosition = true } });
 			var left = JToken.Parse(@"[{""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC8"", ""p"":false}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC9"", ""p"":true}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC10"", ""p"":true}]");
 			var right = JToken.Parse(@"[{""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC8"", ""p"":false}, {""Id"" : ""F12B21EF-F57D-4958-ADDC-A3F52EC25EC10"", ""p"":true}]");
 

@@ -31,7 +31,7 @@ namespace JsonDiffPatchDotNet
 
 		/// <summary>
 		/// Diff two JSON objects.
-		/// 
+		///
 		/// The output is a JObject that contains enough information to represent the
 		/// delta between the two objects and to be able perform patch and reverse operations.
 		/// </summary>
@@ -40,11 +40,11 @@ namespace JsonDiffPatchDotNet
 		/// <returns>JSON Patch Document</returns>
 		public JToken Diff(JToken left, JToken right)
 		{
-		    
+
 		    var objectHash = this._options.ObjectHash;
             var itemMatch = new DefaultItemMatch(objectHash);
-		
-		
+
+
 			if (left == null)
 				left = new JValue("");
 			if (right == null)
@@ -77,7 +77,7 @@ namespace JsonDiffPatchDotNet
 			if (!itemMatch.Match(left, right))
 			{
 				return new JArray(left, right);
-			}				
+			}
 
 			return null;
 		}
@@ -282,7 +282,7 @@ namespace JsonDiffPatchDotNet
 
 		/// <summary>
 		/// Diff two JSON objects.
-		/// 
+		///
 		/// The output is a JObject that contains enough information to represent the
 		/// delta between the two objects and to be able perform patch and reverse operations.
 		/// </summary>
@@ -362,7 +362,7 @@ namespace JsonDiffPatchDotNet
 				}
 			}
 
-			// Find properties that were added 
+			// Find properties that were added
 			foreach (var rp in right.Properties())
 			{
 				if (left.Property(rp.Name) != null || (_options.DiffBehaviors & DiffBehavior.IgnoreNewProperties) == DiffBehavior.IgnoreNewProperties)
@@ -381,7 +381,28 @@ namespace JsonDiffPatchDotNet
         {
             var objectHash = this._options.ObjectHash;
             var itemMatch = new DefaultItemMatch(objectHash);
-			
+
+            // Determine matching strategy using JavaScript-like auto-detection
+            bool matchByPosition;
+            if (_options.DiffArrayOptions.MatchByPosition.HasValue)
+            {
+	            // User explicitly set preference - respect their choice
+	            matchByPosition = _options.DiffArrayOptions.MatchByPosition.Value;
+            }
+            else if (left.Count > 0 && right.Count > 0 && objectHash == null)
+            {
+	            // Auto-detect optimal strategy when no ObjectHash provided:
+	            // - If arrays contain identical content at different positions → use content-based matching
+	            // - If no content matches found → use efficient position-based matching
+	            bool hasContentMatches = ArraysHaveMatchByRef(left, right);
+	            matchByPosition = !hasContentMatches;
+            }
+            else
+            {
+	            // Default to position-based matching for edge cases (empty arrays, with ObjectHash, etc.)
+	            matchByPosition = true;
+            }
+
 			var result = JObject.Parse(@"{ ""_t"": ""a"" }");
 
             int commonHead = 0;
@@ -398,7 +419,8 @@ namespace JsonDiffPatchDotNet
 					left[commonHead],
 					commonHead,
 					right[commonHead],
-					commonHead))
+					commonHead,
+					matchByPosition))
 			{
 				var index = commonHead;
 				var child = Diff(left[index], right[index]);
@@ -415,7 +437,8 @@ namespace JsonDiffPatchDotNet
 					left[left.Count - 1 - commonTail],
 					left.Count - 1 - commonTail,
 					right[right.Count - 1 - commonTail],
-					right.Count - 1 - commonTail))
+					right.Count - 1 - commonTail,
+					matchByPosition))
             {
                 var index1 = left.Count - 1 - commonTail;
                 var index2 = right.Count - 1 - commonTail;
@@ -454,17 +477,17 @@ namespace JsonDiffPatchDotNet
                 return result;
             }
 
-			// Keep track of items in the array that were deleted, as if they are added back, 
+			// Keep track of items in the array that were deleted, as if they are added back,
 			// they can be treated as moves
 			Dictionary<object, int> deletes = new Dictionary<object, int>();
-			
+
 			var comparer = new JTokenEqualityComparer();
 
 			// Complex Diff, find the LCS (Longest Common Subsequence)
 			List<JToken> trimmedLeft = left.ToList().GetRange(commonHead, left.Count - commonTail - commonHead);
             List<JToken> trimmedRight = right.ToList().GetRange(commonHead, right.Count - commonTail - commonHead);
-			
-            Lcs lcs = Lcs.Get(trimmedLeft, trimmedRight, itemMatch);
+
+            Lcs lcs = Lcs.Get(trimmedLeft, trimmedRight, itemMatch, matchByPosition);
 
             for (int index = commonHead; index < left.Count - commonTail; ++index)
             {
@@ -483,7 +506,7 @@ namespace JsonDiffPatchDotNet
 
 						deletes.Add(entryId, index);
 					}
-					
+
                     result[$"_{index}"] = new JArray(left[index], 0, (int)DiffOperation.Deleted);
                 }
             }
@@ -755,6 +778,53 @@ namespace JsonDiffPatchDotNet
 			}
 
 			return right;
+		}
+
+		/// <summary>
+		/// Analyzes if arrays would benefit from content-based matching vs position-based matching.
+		/// This detects scenarios where identical content exists at different positions,
+		/// indicating that content-based matching would produce better diff results.
+		/// Used for auto-detection to provide optimal matching strategy.
+		/// </summary>
+		private bool ArraysHaveMatchByRef(JArray array1, JArray array2)
+		{
+			// Quick check: if arrays are too small or very different sizes, use position matching
+			if (array1.Count < 2 || array2.Count < 2 || Math.Abs(array1.Count - array2.Count) > Math.Max(array1.Count, array2.Count) / 2)
+			{
+				return false;
+			}
+
+			// Check for potential content matches that would benefit from non-position matching
+			// This is more lenient than the strict MatchArrayElement logic
+			int contentMatches = 0;
+			int maxSearchItems = Math.Min(Math.Min(array1.Count, array2.Count), 15);
+
+			for (int index1 = 0; index1 < maxSearchItems; index1++)
+			{
+				var val1 = array1[index1];
+				// Skip non-objects as they're handled well by the strict matching
+				if (val1.Type != JTokenType.Object && val1.Type != JTokenType.Array)
+					continue;
+
+				for (int index2 = 0; index2 < maxSearchItems; index2++)
+				{
+					if (index1 == index2) continue;
+
+					var val2 = array2[index2];
+					// Look for content equality that suggests this array would benefit from content matching
+					if ((val2.Type == JTokenType.Object || val2.Type == JTokenType.Array) &&
+					    JToken.DeepEquals(val1, val2))
+					{
+						contentMatches++;
+						// If we find evidence of content matches, suggest content-based matching
+						if (contentMatches >= 1)
+						{
+							return true;
+						}
+					}
+				}
+			}
+			return false;
 		}
 	}
 }
