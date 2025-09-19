@@ -788,39 +788,15 @@ namespace JsonDiffPatchDotNet
 		/// </summary>
 		private bool ArraysHaveMatchByRef(JArray array1, JArray array2)
 		{
-			// Quick check: if arrays are too small or very different sizes, use position matching
-			if (array1.Count < 2 || array2.Count < 2 || Math.Abs(array1.Count - array2.Count) > Math.Max(array1.Count, array2.Count) / 2)
-			{
-				return false;
-			}
-
-			// Check for potential content matches that would benefit from non-position matching
-			// This is more lenient than the strict MatchArrayElement logic
-			int contentMatches = 0;
-			int maxSearchItems = Math.Min(Math.Min(array1.Count, array2.Count), 15);
-
-			for (int index1 = 0; index1 < maxSearchItems; index1++)
+			for (int index1 = 0; index1 < array1.Count; index1++)
 			{
 				var val1 = array1[index1];
-				// Skip non-objects as they're handled well by the strict matching
-				if (val1.Type != JTokenType.Object && val1.Type != JTokenType.Array)
-					continue;
-
-				for (int index2 = 0; index2 < maxSearchItems; index2++)
+				for (int index2 = 0; index2 < array2.Count; index2++)
 				{
-					if (index1 == index2) continue;
-
 					var val2 = array2[index2];
-					// Look for content equality that suggests this array would benefit from content matching
-					if ((val2.Type == JTokenType.Object || val2.Type == JTokenType.Array) &&
-					    JToken.DeepEquals(val1, val2))
+					if (index1 != index2 && JToken.DeepEquals(val1, val2))
 					{
-						contentMatches++;
-						// If we find evidence of content matches, suggest content-based matching
-						if (contentMatches >= 1)
-						{
-							return true;
-						}
+						return true;
 					}
 				}
 			}

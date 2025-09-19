@@ -507,5 +507,56 @@ namespace JsonDiffPatchDotNet.UnitTests
 			Assert.IsNotNull(insertDiff, "Insert diff should be array");
 			Assert.AreEqual(1, insertDiff.Count, "Insert should have one element");
 		}
+
+		[Test]
+		public void Diff_ArrayRemoveMultipleMiddleNoObjectHash_ValidPatch_only_what_changes()
+		{
+			var jdp = new JsonDiffPatch(new Options {
+				TextDiff = TextDiffMode.Simple
+			});
+
+			var left = JToken.Parse(@"{
+				""Variables"": [
+					{""Id"": ""var1"", ""Name"": ""Variable 1"", ""Value"": ""Value 1""},
+					{""Id"": ""var2"", ""Name"": ""Variable 2"", ""Value"": ""Value 2""},
+					{""Id"": ""var3"", ""Name"": ""Variable 3"", ""Value"": ""Value 3""},
+					{""Id"": ""var4"", ""Name"": ""Variable 4"", ""Value"": ""Value 4""},
+					{""Id"": ""var5"", ""Name"": ""Variable 5"", ""Value"": ""Value 5""}
+				]
+			}");
+
+			var right = JToken.Parse(@"{
+				""Variables"": [
+					{""Id"": ""var1"", ""Name"": ""Variable 1"", ""Value"": ""Value 1""},
+					{""Id"": ""var4"", ""Name"": ""Variable 4"", ""Value"": ""Value 4""},
+					{""Id"": ""var5"", ""Name"": ""Variable 5"", ""Value"": ""Value 5""}
+				]
+			}");
+
+			JObject diff = jdp.Diff(left, right) as JObject;
+
+			Assert.IsNotNull(diff, "Diff should not be null");
+			Console.WriteLine($"Remove multiple diff: {diff}");
+
+			var variablesDiff = diff["Variables"] as JObject;
+			Assert.IsNotNull(variablesDiff, "Variables diff should not be null");
+
+			// With auto-detection, should show minimal diff: array marker + two deletions
+			Assert.AreEqual(3, variablesDiff.Properties().Count(), "Should have minimal diff entries for remove multiple");
+			Assert.IsNotNull(variablesDiff["_t"], "Should have array type marker");
+			Assert.IsNotNull(variablesDiff["_1"], "Should have deletion at index 1 (var2)");
+			Assert.IsNotNull(variablesDiff["_2"], "Should have deletion at index 2 (var3)");
+
+			// The deletions should be three-element arrays (delete operations)
+			var delete1Diff = variablesDiff["_1"] as JArray;
+			Assert.IsNotNull(delete1Diff, "Delete diff should be array");
+			Assert.AreEqual(3, delete1Diff.Count, "Delete should have three elements");
+			Assert.AreEqual(0, delete1Diff[2].Value<int>(), "Should be delete operation");
+
+			var delete2Diff = variablesDiff["_2"] as JArray;
+			Assert.IsNotNull(delete2Diff, "Delete diff should be array");
+			Assert.AreEqual(3, delete2Diff.Count, "Delete should have three elements");
+			Assert.AreEqual(0, delete2Diff[2].Value<int>(), "Should be delete operation");
+		}
 	}
 }
