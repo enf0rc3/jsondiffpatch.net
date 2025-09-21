@@ -6,7 +6,7 @@ using System.Collections.Generic;
 namespace JsonDiffPatchDotNet
 {
 	public sealed class Options
-	{		
+	{
 		public Options()
 		{
 			ArrayDiff = ArrayDiffMode.Efficient;
@@ -45,9 +45,9 @@ namespace JsonDiffPatchDotNet
 		/// Specifies options related to array property moves and how they are shown in the diff.
 		/// </summary>
 		public ArrayOptions DiffArrayOptions { get; set; }
-		
+
         /// <summary>
-        /// for LCS to work, it needs a way to match items between previous/original (or left/right) arrays. In traditional text diff tools this is trivial, as two lines of text are compared char 
+        /// for LCS to work, it needs a way to match items between previous/original (or left/right) arrays. In traditional text diff tools this is trivial, as two lines of text are compared char
         /// char.
         /// When no matches by reference or value are found, array diffing fallbacks to a dumb behavior: matching items by position.
         /// Matching by position is not the most efficient option (eg. if an item is added at the first position, all the items below will be considered modified), but it produces expected results
@@ -65,6 +65,7 @@ namespace JsonDiffPatchDotNet
 		{
 			DetectMove = false;
 			IncludeValueOnMove = false;
+			MatchByPosition = null; // Auto-detect by default
 		}
 
 		/// <summary>
@@ -73,8 +74,18 @@ namespace JsonDiffPatchDotNet
 		public bool DetectMove { get; set; }
 
 		/// <summary>
-		/// If not set, only moved value's index will appear in the diff result. The value will be "". 
+		/// If not set, only moved value's index will appear in the diff result. The value will be "".
 		/// </summary>
 		public bool IncludeValueOnMove { get; set; }
+
+		/// <summary>
+		/// Specifies whether to fall back to position-based matching when no object hash function is provided.
+		/// <para>When <c>true</c>: Objects at the same index will be considered matches if no hash function is available.</para>
+		/// <para>When <c>false</c>: Uses content-based matching even without a hash function, providing better diff quality.</para>
+		/// <para>When <c>null</c> (default): Automatically detects the optimal matching strategy based on array content.
+		/// The library analyzes whether arrays contain identical content at different positions and chooses
+		/// the most appropriate matching approach for better performance and diff quality.</para>
+		/// </summary>
+		public bool? MatchByPosition { get; set; }
 	}
 }
